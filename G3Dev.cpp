@@ -19,8 +19,7 @@
 #include <errno.h>
 #include <sys/wait.h>;
 #include <sys/types.h>;
-#include <string.h>
-#include <errno.h>
+
 
 #define LOG_TAG "Vold"
 
@@ -33,7 +32,7 @@
 #include <unistd.h>
 
 //#define USBPATH  "/sys/class/usb_device/usbdev1.1/device/1-1"
-#define  USBPATH   "/sys/class/usb_device/usbdev1.1/device/1-1"
+#define  USBPATH   "/sys/class/usb_device/usbdev2.1/device/2-1"
 #if PLATFORM_SDK_VERSION >= 16
 #define LOGV(fmt,args...) ALOGV(fmt,##args)
 #define LOGD(fmt,args...) ALOGD(fmt,##args)
@@ -57,80 +56,6 @@ G3Dev::G3Dev(MiscManager *mm):Misc(mm)
 
 G3Dev::~G3Dev() {
 }
-
-//***********************************
-//* add by bonovo zbiao for UsbG3dev
-//***********************************
-int G3Dev::handleUsbG3dev(){
-	int vid, pid, res;
-	char* usbpath = "sys/class/usb_device/usbdev2.2";
-
-	if(access(usbpath, F_OK) == 0){
-		//SLOGD("the path sys/class/usb_device/usbdev2.2 is exist!\n");
-		if((res = get_usb_id(usbpath, &vid, &pid)) != 0){
-			SLOGD("get_tty_id error, res=%d\n", res);
-			return -2;
-		}
-		char configure_file[2048];
-		sprintf(configure_file, "/etc/usb_modeswitch.d/%04x_%04x", vid, pid);
-		if(access(configure_file, 0) == 0)
-		{
-			char modeswitch_cmd[256] = "";
-			// sprintf(modeswitch_cmd, "usb_modeswitch -W -I -c %s &", configure_file);
-			sprintf(modeswitch_cmd, "/system/bin/usb_modeswitch.sh %s &", configure_file);
-			SLOGD("=== USB Switch: %s", modeswitch_cmd);
-			system(modeswitch_cmd);
-		}else{
-			SLOGD("access %s error(%s)\n", configure_file, strerror(errno));
-			return -3;
-		}
-	}
-	else{
-		SLOGD("access sys/class/usb_device/usbdev2.2 error(%s)\n", strerror(errno));
-		return -1;
-	}
-	return 0;
-}
-
-int G3Dev::get_usb_id(char* usb_path, int *vid, int* pid)
-{
-	char linkto[1024]="";
-
-	char pidpath[1024];
-	FILE* fp = NULL;
-	char buf[5] = "";
-
-	sprintf(pidpath, "%s/device/idVendor", usb_path);
-	SLOGD("Vendor path: %s", pidpath);
-	fp = fopen(pidpath, "r");
-	if(fp == NULL)
-		return -2;
-	if(fread(buf, 1, 4, fp) != 4)
-	{
-		fclose(fp);
-		return -2;
-	}
-	fclose(fp);
-	*vid = atox(buf, 16);
-	//char vidpath[1024]="/sys/class/usb_device/usbdev1.1/device/1-1";
-
-	char vidpath[1024];
-	sprintf(vidpath, "%s/device/idProduct", usb_path);
-	SLOGD("Product path: %s", vidpath);
-	fp = fopen(vidpath, "r");
-	if(fp == NULL)
-		return -3;
-	if(fread(buf, 1, 4, fp) != 4)
-	{
-		fclose(fp);
-		return -3;
-	}
-	fclose(fp);
-	*pid =atox(buf, 16);
-
-    return 0;
-}
-//***********************************
 
 int G3Dev::handleUsbEvent(NetlinkEvent *evt) {
  const char *devtype = evt->findParam("DEVTYPE");
@@ -181,6 +106,7 @@ int G3Dev::handleScsiEvent(NetlinkEvent *evt) {
     {
         SLOGD("=== SCSI Switch: %s", modeswitch_cmd);
         system(modeswitch_cmd);
+        system(modeswitch_cmd);
         modeswitch_cmd[0] = 0;
     }
 
@@ -193,6 +119,7 @@ int G3Dev::handleUsb(){
  int pid,vid;
  this->get_tty_id(USBPATH,&vid,& pid);
  sprintf(configure_file, "/etc/usb_modeswitch.d/%04x_%04x", vid,pid);
+ SLOGD("=== configure_file: %s", configure_file);
  if( access(configure_file, 0) == 0 )
  {
 	sprintf(modeswitch_cmd, "/system/bin/usb_modeswitch.sh %s &", configure_file);
@@ -200,11 +127,6 @@ int G3Dev::handleUsb(){
 	 system(modeswitch_cmd);
  
   }
-    //***************************
-    //* add by bonovo zbiao
-    //***************************
-    handleUsbG3dev();
-    //***************************
  return 0;
  }
 int G3Dev:: get_tty_id( char* tty_path, int *vid, int* pid)
@@ -215,7 +137,7 @@ int G3Dev:: get_tty_id( char* tty_path, int *vid, int* pid)
 	   SLOGD("device path: %s", tty_path);////	  
 	   		   
 	   //  LOGD("USB device path: %s", plink);
-	   char pidpath[1024]="/sys/class/usb_device/usbdev1.1/device/1-1";
+	   char pidpath[1024]="/sys/class/usb_device/usbdev2.1/device/2-1";
 	   
 		   FILE* fp = NULL;
 		   char buf[5] = "";
@@ -231,7 +153,7 @@ int G3Dev:: get_tty_id( char* tty_path, int *vid, int* pid)
 		   }
 		   fclose(fp);
 		   *vid = atox(buf, 16);
-	   char vidpath[1024]="/sys/class/usb_device/usbdev1.1/device/1-1";
+	   char vidpath[1024]="/sys/class/usb_device/usbdev2.1/device/2-1";
 		
 		   strcat(vidpath, "/idProduct");
 	   //	 LOGD("Product path: %s", plink);
