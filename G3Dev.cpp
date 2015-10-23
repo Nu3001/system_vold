@@ -32,8 +32,7 @@
 #include "ResponseCode.h"
 #include <unistd.h>
 
-//#define USBPATH  "/sys/class/usb_device/usbdev1.1/device/1-1"
-#define  USBPATH   "/sys/class/usb_device/usbdev1.1/device/1-1"
+#define USBPATH  "/sys/class/usb_device/usbdev1.1/device/1-1"
 #if PLATFORM_SDK_VERSION >= 16
 #define LOGV(fmt,args...) ALOGV(fmt,##args)
 #define LOGD(fmt,args...) ALOGD(fmt,##args)
@@ -48,7 +47,7 @@ static char modeswitch_cmd[256] = "";
 G3Dev::G3Dev(MiscManager *mm):Misc(mm)
 {
 	
-	//Ö±½Ó¶ÔnetLinkEventÊÂ¼þ³ÉÔ±¸³Öµ
+	//ç›´æŽ¥å¯¹netLinkEventäº‹ä»¶æˆå‘˜èµ‹å€¼
 	//NetlinkEvent *evt = new NetlinkEvent();
 	//evt->mAction=NetlinkEvent::NlActionAdd;
 	//evt->mSubsystem="usb_storage";
@@ -68,7 +67,7 @@ int G3Dev::handleUsbG3dev(){
 	if(access(usbpath, F_OK) == 0){
 		//SLOGD("the path sys/class/usb_device/usbdev2.2 is exist!\n");
 		if((res = get_usb_id(usbpath, &vid, &pid)) != 0){
-			SLOGD("get_tty_id error, res=%d\n", res);
+			SLOGD("=== USBModeSwitch get_tty_id error, res=%d\n", res);
 			return -2;
 		}
 		char configure_file[2048];
@@ -78,7 +77,7 @@ int G3Dev::handleUsbG3dev(){
 			char modeswitch_cmd[256] = "";
 			// sprintf(modeswitch_cmd, "usb_modeswitch -W -I -c %s &", configure_file);
 			sprintf(modeswitch_cmd, "/system/bin/usb_modeswitch.sh %s &", configure_file);
-			SLOGD("=== USB Switch: %s", modeswitch_cmd);
+			SLOGD("=== USBModeSwitch: %s", modeswitch_cmd);
 			system(modeswitch_cmd);
 		}else{
 			SLOGD("access %s error(%s)\n", configure_file, strerror(errno));
@@ -101,7 +100,7 @@ int G3Dev::get_usb_id(char* usb_path, int *vid, int* pid)
 	char buf[5] = "";
 
 	sprintf(pidpath, "%s/device/idVendor", usb_path);
-	SLOGD("Vendor path: %s", pidpath);
+	SLOGD("=== USBModeSwitch Vendor ID Path: %s", pidpath);
 	fp = fopen(pidpath, "r");
 	if(fp == NULL)
 		return -2;
@@ -116,7 +115,7 @@ int G3Dev::get_usb_id(char* usb_path, int *vid, int* pid)
 
 	char vidpath[1024];
 	sprintf(vidpath, "%s/device/idProduct", usb_path);
-	SLOGD("Product path: %s", vidpath);
+	SLOGD("=== USBModeSwitch Product ID path: %s", vidpath);
 	fp = fopen(vidpath, "r");
 	if(fp == NULL)
 		return -3;
@@ -144,7 +143,7 @@ int G3Dev::handleUsbEvent(NetlinkEvent *evt) {
         const char *product = evt->findParam("PRODUCT");
         if(product!=NULL && product[0] != 0 && devtype[0] != 0 )
         {
-            // »ñÈ¡VID/PID
+            // èŽ·å–VID/PID
             int vid = 0;
             int pid = 0;
             char * next = (char*)product;
@@ -154,7 +153,7 @@ int G3Dev::handleUsbEvent(NetlinkEvent *evt) {
             ++next;
             pid = strtol(next, NULL, 16);
 
-            SLOGD("== current usb device: %04X/%04X ===", vid, pid);
+            SLOGD("=== Current USBModeSwitch device: %04X/%04X ===", vid, pid);
 
             char configure_file[2048];
 			
@@ -164,7 +163,7 @@ int G3Dev::handleUsbEvent(NetlinkEvent *evt) {
             {
                // sprintf(modeswitch_cmd, "usb_modeswitch -W -I -c %s &", configure_file);
             	sprintf(modeswitch_cmd, "/system/bin/usb_modeswitch.sh %s &", configure_file);
-                SLOGD("=== USB Switch: %s", modeswitch_cmd);
+                SLOGD("=== USBModeSwitch: %s", modeswitch_cmd);
                 system(modeswitch_cmd);
             }
         }
@@ -174,12 +173,12 @@ int G3Dev::handleUsbEvent(NetlinkEvent *evt) {
 }
 int G3Dev::handleScsiEvent(NetlinkEvent *evt) {
 /*
-    ÓÐÒ»¶¨¸ÅÂÊÔÚusb_device Õâ¸öeventÖÐÖ´ÐÐµÄusb_modeswitchÃ»ÓÐ³É¹¦£¬×÷Îª²¹×ã
-    ÊÖ¶Î£¬ÔÚSCSIÕâ¸öeventÖÐÔÙ´ÎÖ´ÐÐusb_modeswitch
+    æœ‰ä¸€å®šæ¦‚çŽ‡åœ¨usb_device è¿™ä¸ªeventä¸­æ‰§è¡Œçš„usb_modeswitchæ²¡æœ‰æˆåŠŸï¼Œä½œä¸ºè¡¥è¶³
+    æ‰‹æ®µï¼Œåœ¨SCSIè¿™ä¸ªeventä¸­å†æ¬¡æ‰§è¡Œusb_modeswitch
  */
     if(evt->getAction()==NetlinkEvent::NlActionAdd && modeswitch_cmd[0] != 0)
     {
-        SLOGD("=== SCSI Switch: %s", modeswitch_cmd);
+        SLOGD("=== SCSI USBModeSwitch: %s", modeswitch_cmd);
         system(modeswitch_cmd);
         modeswitch_cmd[0] = 0;
     }
@@ -196,7 +195,7 @@ int G3Dev::handleUsb(){
  if( access(configure_file, 0) == 0 )
  {
 	sprintf(modeswitch_cmd, "/system/bin/usb_modeswitch.sh %s &", configure_file);
-	SLOGD("=== USB Switch: %s", modeswitch_cmd);
+	SLOGD("=== USBModeSwitch Switch: %s", modeswitch_cmd);
 	 system(modeswitch_cmd);
  
   }
@@ -211,16 +210,15 @@ int G3Dev:: get_tty_id( char* tty_path, int *vid, int* pid)
 {
    
 	   char linkto[1024]="";
-	   SLOGD("began find device path");
-	   SLOGD("device path: %s", tty_path);////	  
+	   SLOGD("=== USBModeSwitch: Began finding the device path");
+	   SLOGD("=== USBModeSwitch: The device path is: %s", tty_path);	  
 	   		   
-	   //  LOGD("USB device path: %s", plink);
 	   char pidpath[1024]="/sys/class/usb_device/usbdev1.1/device/1-1";
 	   
 		   FILE* fp = NULL;
 		   char buf[5] = "";
 		   strcat(pidpath, "/idVendor");
-	   	 SLOGD("Vendor path: %s", pidpath);
+	   	   SLOGD("=== USBModeSwitch Vendor Path: %s", pidpath);
 		   fp = fopen(pidpath, "r");
 		   if(fp == NULL)
 			   return -2;
@@ -234,7 +232,7 @@ int G3Dev:: get_tty_id( char* tty_path, int *vid, int* pid)
 	   char vidpath[1024]="/sys/class/usb_device/usbdev1.1/device/1-1";
 		
 		   strcat(vidpath, "/idProduct");
-	   //	 LOGD("Product path: %s", plink);
+	           SLOGD("=== USBModeSwitch Product Path: %s", vidpath);
 		   fp = fopen(vidpath, "r");
 		   if(fp == NULL)
 			   return -3;
